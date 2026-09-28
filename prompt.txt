@@ -1,0 +1,59 @@
+Act as an expert Financial Fraud Data Scientist and Synthetic Dataset Architect specializing in UPI (Unified Payments Interface) transactions in India.
+
+Generate a realistic, synthetic, labeled transaction dataset for training and benchmarking an Explainable AI (XAI) Adaptive UPI Fraud Detection Engine ("SentinelUPI").
+
+The dataset must simulate real-world Indian UPI behavioral dynamics, including normal routine spending, benign lifestyle anomalies (festivals, vacations, new phone purchases), and coordinated hostile fraud patterns (account takeovers, SIM-swap attacks, nocturnal cash-outs).
+
+### Output Specifications:
+- Format: Clean CSV (Comma Separated Values) with header row.
+- Size: Generate at least 1,000 to 5,000 rows (or provide a Python generation script that outputs up to 100,000 rows according to these exact statistical distributions).
+- Ensure realistic numerical values (amounts in INR ₹, plausible timestamps, realistic geographic coordinates of Indian cities, and plausible device identifiers).
+
+---
+
+### Dataset Schema & Column Definitions:
+
+1. `transaction_id` (string): Unique identifier (e.g., "TXN_UPI_100001").
+2. `user_id` (string): User identifier across multiple recurring transactions to observe behavioral baselines (e.g., "USR_4091"). Include at least 50-100 distinct users with 20-50 transactions each.
+3. `timestamp` (string, YYYY-MM-DD HH:MM:SS): Timestamp in Indian Standard Time (IST).
+4. `amount` (float): Transaction amount in INR (₹). Range from ₹10.0 to ₹100,000.0.
+5. `merchant_category` (string): Category of payment:
+   - "Groceries_Daily"
+   - "Food_Dining"
+   - "Electronics_Gadgets"
+   - "Jewelry_Luxury"
+   - "P2P_Transfer"
+   - "Travel_Ticketing"
+   - "Utility_Bills"
+   - "Gaming_Crypto"
+6. `device_id` (string): Unique hardware identifier (e.g., "DEV_IN_SAMS23_01", "DEV_EMULATOR_88").
+7. `device_model` (string): Device model name (e.g., "Samsung Galaxy S23", "iPhone 15", "OnePlus 12", "Xiaomi Redmi Note 13", "Linux Emulator").
+8. `location_city` (string): Indian city name (e.g., "Mumbai", "Delhi", "Bengaluru", "Hyderabad", "Pune", "Chennai", "Kolkata", "Jaipur", or foreign e.g. "Lagos", "Moscow").
+9. `location_lat` (float): Latitude (e.g., 19.0760 for Mumbai).
+10. `location_lon` (float): Longitude (e.g., 72.8777 for Mumbai).
+11. `user_avg_amount_30d` (float): Historical rolling average spend for this user (EWMA mean) prior to this transaction.
+12. `user_std_amount_30d` (float): Historical rolling standard deviation of spend for this user prior to this transaction.
+13. `is_known_device` (int: 0 or 1): 1 if the transaction originated from a historically verified device belonging to the user, 0 if it is an unrecognized or newly seen device.
+14. `is_known_city` (int: 0 or 1): 1 if the user routinely transacts from this city/region, 0 if it is a new/unfamiliar location.
+15. `hours_since_last_txn` (float): Time difference in decimal hours since this user's prior transaction (e.g., 0.15 for ~9 mins, 4.5 for 4.5 hours).
+16. `km_from_last_txn` (float): Haversine distance in kilometers from the user's previous transaction location.
+17. `velocity_kmh` (float): Implied physical velocity = `km_from_last_txn / max(hours_since_last_txn, 0.01)`. Normal travel < 100 km/h (car/train) or < 850 km/h (flight). Impossible travel > 1,000 km/h.
+18. `is_nocturnal` (int: 0 or 1): 1 if transaction takes place between 01:00 AM and 05:30 AM IST, otherwise 0.
+19. `txn_velocity_1h` (int): Count of transactions attempted by this user in the preceding 60 minutes.
+20. `scenario_type` (string): Ground-truth category:
+   - `normal_routine` (Daily tea, groceries, routine bills, trusted device, low Z-score)
+   - `benign_festive_spend` (Diwali/wedding high spend on trusted device, high amount, 0 fraud)
+   - `benign_travel` (User flying to another city, travel tickets, high distance but plausible flight velocity, 0 fraud)
+   - `hostile_account_takeover` (Unfamiliar device + nocturnal hour + instant max limit P2P transfer, is_fraud = 1)
+   - `credential_stuffing_burst` (Sudden burst of 8-15 rapid micro-transactions within minutes from unknown device, is_fraud = 1)
+   - `impossible_travel_jump` (Transactions 2,000 km apart within 15 minutes, velocity > 5,000 km/h, is_fraud = 1)
+21. `is_fraud` (int: 0 or 1): Target label for supervised training (0 = Legitimate, 1 = Hostile Fraud).
+
+---
+
+### Class Distribution & Statistical Integrity:
+- Fraud Rate: Maintain an authentic realistic imbalanced distribution of approximately 3% to 8% `is_fraud = 1`.
+- Benign Anomaly Rate: Approximately 10% to 15% should be benign anomalies (high amount or new city, but from trusted devices with legitimate patterns) to force the model to avoid blind false-positive alerts.
+- Ensure the calculated fields (`velocity_kmh`, Z-score: `(amount - user_avg_amount_30d) / user_std_amount_30d`) are mathematically coherent with the raw columns.
+
+Please output the dataset beginning with the CSV header, followed by representative sample rows. If generating via a Python script, provide a clean, standalone, reproducible Python script using numpy and pandas that saves the CSV directly to `data/transactions.csv`.
